@@ -1,27 +1,10 @@
 <?php
 
-// --- Configuration et initialisation de la base de données SQLite ---
-
-$db_dir = 'data/';
-$db_file_name = 'devoirs.sqlite';
-$db_path = $db_dir . $db_file_name;
-
-// 1. Assurer que le répertoire de données existe et est accessible
-if (!is_dir($db_dir)) {
-    // Tente de créer le répertoire, si les permissions du parent le permettent
-    if (!mkdir($db_dir, 0777, true)) {
-        die("Erreur de connexion : Impossible de créer le répertoire '{$db_dir}'. Vérifiez les permissions du répertoire parent.");
-    }
-}
-// 2. Vérifier les permissions du répertoire de données
-if (!is_writable($db_dir) && !is_file($db_path)) {
-    // Si le dossier n'est pas inscriptible ET que le fichier n'existe pas encore
-    die("Erreur de connexion : Le répertoire '{$db_dir}' n'a pas les permissions d'écriture (CHMOD 777 requis).");
-}
-
+// Configuration et initialisation de la base de données SQLite
+$db_file = 'devoirs.sqlite';
 try {
-    // Connexion à la base de données via le chemin complet
-    $db = new PDO('sqlite:' . $db_path);
+    // Crée le fichier de base de données s'il n'existe pas
+    $db = new PDO('sqlite:' . $db_file);
     // Active la gestion des erreurs et l'affichage des avertissements
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     // Active le support des contraintes de clé étrangère
@@ -34,7 +17,6 @@ try {
  * Initialisation des tables
  */
 function init_db($db) {
-    // ... (Reste de la fonction init_db inchangée)
     $db->exec("
         -- Table des Devoirs (Assignments)
         CREATE TABLE IF NOT EXISTS assignments (
