@@ -257,12 +257,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
         .assignment-card { transition: transform 0.2s, box-shadow 0.2s; }
         .assignment-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
-        .color-math { background-color: #e0f2fe; border-left: 4px solid #0ea5e9; } /* Blue */
-        .color-anglais { background-color: #fef9c3; border-left: 4px solid #eab308; } /* Yellow */
-        .color-histoire { background-color: #fee2e2; border-left: 4px solid #ef4444; } /* Red */
-        .color-svt { background-color: #d1fae5; border-left: 4px solid #10b981; } /* Green */
-        .color-general { background-color: #f3e8ff; border-left: 4px solid #8b5cf6; } /* Purple (Default) */
-        /* Styles pour le calendrier (basique) */
+            /* Définitions des classes de couleurs pour les matières */
+            /* Utilisation de couleurs Tailwind pour une cohérence visuelle */
+
+        .color-general { background-color: #f3e8ff; border-left: 4px solid #a855f7; } /* Purple (General) */
+        .color-sae { background-color: #ffe4e6; border-left: 4px solid #e11d48; } /* Rose */
+        .color-anglais { background-color: #fef08a; border-left: 4px solid #eab308; } /* Yellow */
+        .color-math { background-color: #e0f7fa; border-left: 4px solid #00bcd4; } /* Cyan Light Blue */
+        .color-bd { background-color: #ccfbf1; border-left: 4px solid #14b8a6; } /* Teal */
+        .color-quali-algo { background-color: #ecfeff; border-left: 4px solid #06b6d4; } /* Cyan */
+        .color-optimisation { background-color: #fff7ed; border-left: 4px solid #f97316; } /* Orange */
+        .color-automatisation { background-color: #f7fee7; border-left: 4px solid #84cc16; } /* Lime Green */
+        .color-prog-avancee { background-color: #eef2ff; border-left: 4px solid #4f46e5; } /* Indigo */
+        .color-comm { background-color: #f5f5f4; border-left: 4px solid #78716c; } /* Stone Gray */
+        .color-ppp { background-color: #fee2e2; border-left: 4px solid #ef4444; } /* Red */
+        .color-eco { background-color: #d1fae5; border-left: 4px solid #10b981; } /* Emerald Green */
+        .color-management { background-color: #fce7f3; border-left: 4px solid #ec4899; } /* Pink */
+        .color-multimedia { background-color: #ede9fe; border-left: 4px solid #8b5cf6; } /* Violet */
+        .color-virtualisation { background-color: #e5e7eb; border-left: 4px solid #6b7280; } /* Dark Gray */
+        .color-droit { background-color: #f3e8ff; border-left: 4px solid #a78bfa; } /* Purple */
+        .color-entreprenariat { background-color: #fffbeb; border-left: 4px solid #f59e0b; } /* Amber */
+        .color-maintenance { background-color: #dcfce7; border-left: 4px solid #22c55e; } /* Classic Green */           /* Styles pour le calendrier (basique) */
         .calendar-day { min-height: 100px; }
         .today { background-color: #dbeafe !important; border: 2px solid #3b82f6; }
         .text-done { text-decoration: line-through; color: #6b7280; }
@@ -289,11 +304,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1" for="subject">Matière</label>
                         <select id="subject" name="subject" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="Math">Mathématiques</option>
+                            <option value="General">Autre / Général</option>
+                            <option value="SAE">SAE</option>
                             <option value="Anglais">Anglais</option>
-                            <option value="Histoire">Histoire/Géo</option>
-                            <option value="SVT">SVT/Physique</option>
-                            <option value="General">Autre</option>
+                            <option value="Math">Mathématiques (modélisation)</option>
+                            <option value="bd">Base de données</option>
+                            <option value="quali_algo">Quali. Algorithmique</option>
+                            <option value="optimisation">Optimisation</option>
+                            <option value="automatisation">Automatisation</option>
+                            <option value="prog_avancee">Programmation avancée</option>
+                            <option value="comm">Communication</option>
+                            <option value="PPP">PPP</option>
+                            <option value="eco">Économie</option>
+                            <option value="management">Management</option>
+                            <option value="multimedia">Multimédia</option>
+                            <option value="virtualisation">Virtualisation avancée</option>
+                            <option value="droit">Droit</option>
+                            <option value="entreprenariat">Entreprenariat</option>
+                            <option value="maintenance">Maintenance</option>
+
                         </select>
                     </div>
                     <div>
@@ -416,12 +445,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Mapping des couleurs pour les matières
         const subjectColors = {
-            'Math': 'color-math',
+            'General': 'color-general',
+            'SAE': 'color-sae',
             'Anglais': 'color-anglais',
-            'Histoire': 'color-histoire',
-            'SVT': 'color-svt',
-            'General': 'color-general'
+            'Math': 'color-math',
+            'bd': 'color-bd',
+            'quali_algo': 'color-quali-algo',
+            'optimisation': 'color-optimisation',
+            'automatisation': 'color-automatisation',
+            'prog_avancee': 'color-prog-avancee',
+            'comm': 'color-comm',
+            'PPP': 'color-ppp',
+            'eco': 'color-eco',
+            'management': 'color-management',
+            'multimedia': 'color-multimedia',
+            'virtualisation': 'color-virtualisation',
+            'droit': 'color-droit',
+            'entreprenariat': 'color-entreprenariat',
+            'maintenance': 'color-maintenance',
         };
+
 
         /**
          * 1. Gestion de l'Identifiant Utilisateur Anonyme
