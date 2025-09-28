@@ -1,0 +1,39 @@
+/* style.css */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Style pour la scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #e2e8f0; } /* slate-200 */
+::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; } /* slate-400 */
+::-webkit-scrollbar-thumb:hover { background: #64748b; } /* slate-500 */
+
+/* Styles pour FullCalendar */
+:root {
+    --fc-border-color: #e2e8f0;
+    --fc-daygrid-event-dot-width: 8px;
+    --fc-list-event-dot-width: 10px;
+    --fc-event-border-color: transparent;
+    --fc-event-text-color: #ffffff;
+    --fc-event-selected-overlay-color: rgba(0, 0, 0, 0.15);
+}
+.fc .fc-toolbar-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+.fc .fc-button-primary {
+    background-color: #4f46e5; /* indigo-600 */
+    border-color: #4f46e5;
+    transition: background-color 0.2s;
+}
+.fc .fc-button-primary:hover {
+    background-color: #4338ca; /* indigo-700 */
+}
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: #e0e7ff; /* indigo-100 */
+}
+.fc-event {
+    cursor: pointer;
+    border: none !important;
+}

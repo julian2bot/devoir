@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda de Devoirs Collaboratif</title>
+    
+    <!-- Tailwind CSS pour un design moderne et responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FullCalendar pour la vue calendrier -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    
+    <!-- Luxon pour la manipulation des dates -->
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+
+    <!-- Google Fonts pour une typographie élégante -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons pour des icônes claires et jolies -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        /* Style pour la scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; } /* slate-200 */
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; } /* slate-400 */
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; } /* slate-500 */
+
+        /* Styles pour FullCalendar */
+        :root {
+            --fc-border-color: #e2e8f0;
+            --fc-daygrid-event-dot-width: 8px;
+            --fc-list-event-dot-width: 10px;
+            --fc-event-border-color: transparent;
+            --fc-event-text-color: #ffffff;
+            --fc-event-selected-overlay-color: rgba(0, 0, 0, 0.15);
+        }
+        .fc .fc-toolbar-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        .fc .fc-button-primary {
+            background-color: #4f46e5; /* indigo-600 */
+            border-color: #4f46e5;
+            transition: background-color 0.2s;
+        }
+        .fc .fc-button-primary:hover {
+            background-color: #4338ca; /* indigo-700 */
+        }
+        .fc .fc-daygrid-day.fc-day-today {
+            background-color: #e0e7ff; /* indigo-100 */
+        }
+        .fc-event {
+            cursor: pointer;
+            border: none !important;
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-800">
+
+    <!-- ===== CONTENEUR PRINCIPAL ===== -->
+    <div id="app" class="min-h-screen transition-opacity duration-500">
+
+        <!-- --- Écran de connexion --- -->
+        <div id="auth-screen" class="fixed inset-0 bg-slate-100 z-50 flex items-center justify-center">
+            <div class="w-full max-w-sm p-8 bg-white rounded-2xl shadow-xl text-center">
+                <i class="ph-duotone ph-student text-6xl text-indigo-500"></i>
+                <h1 class="text-3xl font-bold text-slate-800 mt-4">Agenda Devoirs</h1>
+                <p class="text-slate-500 mt-2">Connectez-vous pour commencer.</p>
+                <div id="auth-container" class="mt-8">
+                     <p class="text-slate-500 animate-pulse">Initialisation de la connexion...</p>
+                </div>
+                 <p class="text-xs text-slate-400 mt-6">Votre identifiant utilisateur (UID) sera affiché publiquement pour la collaboration.</p>
+            </div>
+        </div>
+
+        <!-- --- Interface principale de l'application (visible après connexion) --- -->
+        <div id="main-content" class="hidden opacity-0 transition-opacity duration-500">
+            <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-30 border-b border-slate-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center justify-between h-16">
+                        <div class="flex items-center space-x-2">
+                            <i class="ph-duotone ph-student text-3xl text-indigo-500"></i>
+                            <span class="text-xl font-bold">Agenda Devoirs</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                             <p class="text-sm text-slate-500 hidden md:block">UID: <span id="user-uid" class="font-mono"></span></p>
+                            <button id="logout-btn" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">
+                                Déconnexion
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Colonne de gauche : Prochains devoirs -->
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="flex items-center justify-between">
+                             <h2 class="text-2xl font-bold">Prochains Devoirs</h2>
+                             <button id="add-homework-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center space-x-2">
+                                <i class="ph ph-plus-circle"></i>
+                                <span>Ajouter</span>
+                            </button>
+                        </div>
+                        <div id="upcoming-homework-list" class="space-y-4">
+                           <!-- Les devoirs seront injectés ici par JS -->
+                           <p id="no-upcoming-homework" class="text-center text-slate-500 p-8 bg-slate-100 rounded-lg">Aucun devoir dans les 4 prochains jours.</p>
+                        </div>
+                    </div>
+
+                    <!-- Colonne de droite : Calendrier -->
+                    <div class="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl shadow-lg">
+                        <div id='calendar'></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- ===== MODALES ===== -->
+
+    <!-- --- Modale pour ajouter/modifier un devoir --- -->
+    <div id="homework-modal" class="fixed inset-0 bg-black/50 z-40 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 transform scale-95 opacity-0 transition-all duration-300" id="homework-modal-content">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="modal-title" class="text-2xl font-bold">Ajouter un devoir</h3>
+                <button id="close-modal-btn" class="text-slate-400 hover:text-slate-600"><i class="ph ph-x text-2xl"></i></button>
+            </div>
+            <form id="homework-form">
+                <input type="hidden" id="homework-id">
+                <div class="space-y-4">
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-slate-700">Titre</label>
+                        <input type="text" id="title" class="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="subject" class="block text-sm font-medium text-slate-700">Matière</label>
+                            <input type="text" id="subject" class="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="due-date" class="block text-sm font-medium text-slate-700">Date d'échéance</label>
+                            <input type="date" id="due-date" class="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Couleur</label>
+                        <div id="color-picker" class="flex space-x-2">
+                            <!-- Les couleurs seront injectées ici -->
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Tâches</label>
+                        <div id="tasks-container" class="mt-2 space-y-2">
+                            <!-- Les tâches seront injectées ici -->
+                        </div>
+                        <button type="button" id="add-task-btn" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-semibold flex items-center space-x-1">
+                            <i class="ph ph-plus"></i>
+                            <span>Ajouter une tâche</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="delete-homework-btn" class="bg-red-100 text-red-700 hover:bg-red-200 font-bold py-2 px-4 rounded-lg transition-colors hidden">Supprimer</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ===== SCRIPTS JAVASCRIPT ===== -->
+    <script type="module">
+        // Importation des fonctions Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, deleteDoc, serverTimestamp, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Configuration Firebase (remplacée en production) ---
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDTiAdlT111TplLS6ijjuHn6ULdrcjT9KM",
+    authDomain: "projet-devoir-44baa.firebaseapp.com",
+    projectId: "projet-devoir-44baa",
+    storageBucket: "projet-devoir-44baa.firebasestorage.app",
+    messagingSenderId: "508495882137",
+    appId: "1:508495882137:web:e24c47903b60304f0c1508",
+    measurementId: "G-WDGVGX6E6K"
+  };        // const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'projet-devoir-44baa ';
+
+        // --- Initialisation de Firebase ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Collections Firestore ---
+        // Les devoirs sont publics, partagés entre tous les utilisateurs de l'application
+        const homeworksCollection = collection(db, `artifacts/${appId}/public/data/homeworks`);
+        // Le statut des tâches est privé et propre à chaque utilisateur
+        const userTaskStatusCollection = (userId) => collection(db, `artifacts/${appId}/users/${userId}/taskStatus`);
+        const userTaskStatusDoc = (userId) => doc(db, `artifacts/${appId}/users/${userId}/taskStatus/status`);
+
+
+        // --- Variables globales et état de l'application ---
+        let currentUser = null;
+        let calendar;
+        let allHomeworks = [];
+        let userTaskStatuses = {};
+        const colors = ['#EF4444', '#F97316', '#84CC16', '#22C55E', '#14B8A6', '#0EA5E9', '#6366F1', '#8B5CF6', '#D946EF', '#EC4899'];
+
+        // --- Éléments du DOM ---
+        const authScreen = document.getElementById('auth-screen');
+        const mainContent = document.getElementById('main-content');
+        const userUidElement = document.getElementById('user-uid');
+        const logoutBtn = document.getElementById('logout-btn');
+        const addHomeworkBtn = document.getElementById('add-homework-btn');
+        const upcomingHomeworkList = document.getElementById('upcoming-homework-list');
+        const noUpcomingHomework = document.getElementById('no-upcoming-homework');
+        const homeworkModal = document.getElementById('homework-modal');
+        const homeworkModalContent = document.getElementById('homework-modal-content');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const homeworkForm = document.getElementById('homework-form');
+        const modalTitle = document.getElementById('modal-title');
+        const deleteHomeworkBtn = document.getElementById('delete-homework-btn');
+        
+        // --- AUTHENTIFICATION ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                userUidElement.textContent = user.uid;
+                
+                // Afficher l'interface principale et cacher l'écran de connexion
+                authScreen.classList.add('opacity-0');
+                setTimeout(() => authScreen.style.display = 'none', 500);
+                mainContent.classList.remove('hidden');
+                setTimeout(() => mainContent.classList.remove('opacity-0'), 50);
+
+                initializeAppData();
+
+            } else {
+                currentUser = null;
+                 // Afficher l'écran de connexion
+                authScreen.style.display = 'flex';
+                setTimeout(() => authScreen.classList.remove('opacity-0'), 50);
+                mainContent.classList.add('hidden', 'opacity-0');
+            }
+        });
+        
+        async function setupAuth() {
+            const authContainer = document.getElementById('auth-container');
+             try {
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                authContainer.innerHTML = '<p class="text-green-500">Connecté avec succès !</p>';
+            } catch (error) {
+                console.error("Erreur d'authentification: ", error);
+                authContainer.innerHTML = '<p class="text-red-500">Échec de la connexion. Veuillez rafraîchir la page.</p>';
+            }
+        }
+        
+        logoutBtn.addEventListener('click', () => signOut(auth));
+
+
+        // --- INITIALISATION DE L'APPLICATION ---
+        function initializeAppData() {
+            if (!currentUser) return;
+            
+            // Écouter les changements sur les devoirs
+            onSnapshot(homeworksCollection, (snapshot) => {
+                allHomeworks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderAll();
+            });
+
+            // Écouter les changements sur le statut des tâches de l'utilisateur
+            onSnapshot(userTaskStatusDoc(currentUser.uid), (doc) => {
+                userTaskStatuses = doc.exists() ? doc.data() : {};
+                renderAll();
+            });
+            
+            initializeCalendar();
+        }
+        
+        function initializeCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                locale: 'fr',
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
+                buttonText: {
+                    today: "Aujourd'hui",
+                    month: 'Mois',
+                    week: 'Semaine',
+                    list: 'Liste'
+                },
+                events: [],
+                dateClick: function(info) {
+                    openHomeworkModal(null, info.dateStr);
+                },
+                eventClick: function(info) {
+                    const homework = allHomeworks.find(h => h.id === info.event.id);
+                    if(homework) openHomeworkModal(homework);
+                }
+            });
+            calendar.render();
+        }
+
+
+        // --- FONCTIONS DE RENDU ---
+        
+        function renderAll() {
+            if (!currentUser) return;
+            renderUpcomingHomework();
+            renderCalendarEvents();
+        }
+
+        function renderUpcomingHomework() {
+            upcomingHomeworkList.innerHTML = '';
+            const now = luxon.DateTime.now().startOf('day');
+            const fourDaysLater = now.plus({ days: 4 });
+
+            const upcoming = allHomeworks
+                .filter(h => {
+                    const dueDate = luxon.DateTime.fromJSDate(h.dueDate.toDate()).startOf('day');
+                    return dueDate >= now && dueDate <= fourDaysLater;
+                })
+                .sort((a,b) => a.dueDate.toDate() - b.dueDate.toDate());
+
+            if (upcoming.length === 0) {
+                 upcomingHomeworkList.appendChild(noUpcomingHomework);
+            } else {
+                 if(upcomingHomeworkList.contains(noUpcomingHomework)){
+                    upcomingHomeworkList.removeChild(noUpcomingHomework);
+                 }
+                 upcoming.forEach(renderSingleHomeworkCard);
+            }
+        }
+
+        function renderSingleHomeworkCard(homework) {
+            const card = document.createElement('div');
+            card.className = "bg-white p-4 rounded-xl shadow-md border-l-4 transition-transform transform hover:scale-105";
+            card.style.borderColor = homework.color;
+            card.addEventListener('click', () => openHomeworkModal(homework));
+
+            const dueDate = luxon.DateTime.fromJSDate(homework.dueDate.toDate());
+            
+            let tasksHtml = '<p class="text-sm text-slate-500 italic mt-2">Aucune tâche pour ce devoir.</p>';
+            if(homework.tasks && homework.tasks.length > 0) {
+                tasksHtml = homework.tasks.map(task => {
+                    const isCompleted = userTaskStatuses[task.id] || false;
+                    return `
+                        <div class="flex items-center space-x-2 mt-2">
+                            <input type="checkbox" id="task-${task.id}" data-task-id="${task.id}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" ${isCompleted ? 'checked' : ''}>
+                            <label for="task-${task.id}" class="text-sm text-slate-700 ${isCompleted ? 'line-through text-slate-400' : ''}">${escapeHTML(task.description)}</label>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-bold text-lg">${escapeHTML(homework.title)}</p>
+                        <p class="text-sm text-slate-500">${escapeHTML(homework.subject || 'Matière non spécifiée')}</p>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-2">
+                        <p class="font-semibold text-indigo-600">${dueDate.toFormat('dd')}</p>
+                        <p class="text-xs text-slate-500">${dueDate.toFormat('MMM')}</p>
+                    </div>
+                </div>
+                <div class="mt-3">${tasksHtml}</div>
+            `;
+            
+            card.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Empêche l'ouverture de la modale
+                    toggleTaskStatus(e.target.dataset.taskId, e.target.checked);
+                });
+            });
+
+            upcomingHomeworkList.appendChild(card);
+        }
+
+        function renderCalendarEvents() {
+            if (!calendar) return;
+
+            const events = allHomeworks.map(h => ({
+                id: h.id,
+                title: h.title,
+                start: h.dueDate.toDate(),
+                allDay: true,
+                backgroundColor: h.color,
+                borderColor: h.color,
+            }));
+            calendar.removeAllEvents();
+            calendar.addEventSource(events);
+        }
+
+        
+        // --- LOGIQUE DE LA MODALE ---
+        
+        function openHomeworkModal(homework = null, dateStr = null) {
+            homeworkForm.reset();
+            document.getElementById('homework-id').value = '';
+            document.getElementById('tasks-container').innerHTML = '';
+            deleteHomeworkBtn.classList.add('hidden');
+
+            if (homework) { // Mode édition
+                modalTitle.textContent = 'Modifier le devoir';
+                document.getElementById('homework-id').value = homework.id;
+                document.getElementById('title').value = homework.title;
+                document.getElementById('subject').value = homework.subject || '';
+                document.getElementById('due-date').value = luxon.DateTime.fromJSDate(homework.dueDate.toDate()).toISODate();
+                
+                renderColorPicker(homework.color);
+                
+                if (homework.tasks && homework.tasks.length > 0) {
+                    homework.tasks.forEach(task => addTaskInput(task.description, task.id));
+                }
+                
+                deleteHomeworkBtn.classList.remove('hidden');
+
+            } else { // Mode création
+                modalTitle.textContent = 'Ajouter un devoir';
+                renderColorPicker(colors[Math.floor(Math.random() * colors.length)]);
+                if(dateStr) {
+                    document.getElementById('due-date').value = dateStr;
+                }
+                addTaskInput(); // Ajoute un premier champ de tâche vide
+            }
+
+            homeworkModal.classList.remove('hidden');
+            homeworkModal.classList.add('flex');
+            setTimeout(() => {
+                homeworkModalContent.classList.remove('scale-95', 'opacity-0');
+                homeworkModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        
+        function closeHomeworkModal() {
+            homeworkModalContent.classList.add('scale-95', 'opacity-0');
+            homeworkModalContent.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => {
+                homeworkModal.classList.remove('flex');
+                homeworkModal.classList.add('hidden');
+            }, 300);
+        }
+
+        function renderColorPicker(selectedColor) {
+            const container = document.getElementById('color-picker');
+            container.innerHTML = '';
+            colors.forEach(color => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `w-8 h-8 rounded-full transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`;
+                button.style.backgroundColor = color;
+                button.dataset.color = color;
+                if (color === selectedColor) {
+                    button.classList.add('ring-2', 'ring-offset-2', 'ring-indigo-500');
+                }
+                button.addEventListener('click', () => {
+                    document.querySelector('#color-picker .ring-2')?.classList.remove('ring-2', 'ring-offset-2', 'ring-indigo-500');
+                    button.classList.add('ring-2', 'ring-offset-2', 'ring-indigo-500');
+                });
+                container.appendChild(button);
+            });
+        }
+        
+        function addTaskInput(value = '', id = null) {
+            const container = document.getElementById('tasks-container');
+            const div = document.createElement('div');
+            div.className = 'flex items-center space-x-2';
+            div.innerHTML = `
+                <input type="text" class="flex-grow border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Description de la tâche" value="${escapeHTML(value)}">
+                <button type="button" class="remove-task-btn text-red-500 hover:text-red-700 p-1 rounded-full"><i class="ph ph-trash"></i></button>
+            `;
+            if(id) div.dataset.taskId = id;
+
+            div.querySelector('.remove-task-btn').addEventListener('click', () => div.remove());
+            container.appendChild(div);
+        }
+
+
+        // --- GESTION DES ÉVÉNEMENTS ---
+
+        addHomeworkBtn.addEventListener('click', () => openHomeworkModal());
+        closeModalBtn.addEventListener('click', closeHomeworkModal);
+        homeworkModal.addEventListener('click', (e) => {
+            if (e.target === homeworkModal) {
+                closeHomeworkModal();
+            }
+        });
+        document.getElementById('add-task-btn').addEventListener('click', () => addTaskInput());
+        
+        homeworkForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('homework-id').value;
+            const title = document.getElementById('title').value;
+            const subject = document.getElementById('subject').value;
+            const dueDateStr = document.getElementById('due-date').value;
+            const selectedColorEl = document.querySelector('#color-picker .ring-2');
+            
+            if (!title || !dueDateStr || !selectedColorEl) {
+                alert("Veuillez remplir le titre, la date et sélectionner une couleur.");
+                return;
+            }
+            
+            const tasks = Array.from(document.querySelectorAll('#tasks-container > div')).map(div => {
+                const input = div.querySelector('input');
+                return {
+                    id: div.dataset.taskId || crypto.randomUUID(),
+                    description: input.value
+                };
+            }).filter(task => task.description.trim() !== '');
+
+            const homeworkData = {
+                title,
+                subject,
+                dueDate: Timestamp.fromDate(new Date(dueDateStr)),
+                color: selectedColorEl.dataset.color,
+                tasks,
+                updatedAt: serverTimestamp()
+            };
+            
+            try {
+                if (id) { // Mise à jour
+                    const homeworkRef = doc(db, `artifacts/${appId}/public/data/homeworks`, id);
+                    await setDoc(homeworkRef, homeworkData, { merge: true });
+                } else { // Création
+                    homeworkData.createdAt = serverTimestamp();
+                    homeworkData.createdBy = currentUser.uid;
+                    await addDoc(homeworksCollection, homeworkData);
+                }
+                closeHomeworkModal();
+            } catch (error) {
+                console.error("Erreur lors de la sauvegarde du devoir: ", error);
+                alert("Une erreur s'est produite.");
+            }
+        });
+        
+        deleteHomeworkBtn.addEventListener('click', async () => {
+            const id = document.getElementById('homework-id').value;
+            if (id && confirm("Êtes-vous sûr de vouloir supprimer ce devoir ? Cette action est irréversible.")) {
+                try {
+                    const homeworkRef = doc(db, `artifacts/${appId}/public/data/homeworks`, id);
+                    await deleteDoc(homeworkRef);
+                    closeHomeworkModal();
+                } catch (error) {
+                    console.error("Erreur lors de la suppression: ", error);
+                    alert("Une erreur s'est produite.");
+                }
+            }
+        });
+
+
+        // --- ACTIONS UTILISATEUR (Tâches) ---
+        async function toggleTaskStatus(taskId, isCompleted) {
+            if (!currentUser) return;
+            try {
+                const newStatus = {};
+                newStatus[taskId] = isCompleted;
+                await setDoc(userTaskStatusDoc(currentUser.uid), newStatus, { merge: true });
+            } catch (error) {
+                console.error("Erreur lors de la mise à jour de la tâche :", error);
+            }
+        }
+        
+        // --- UTILITAIRES ---
+        function escapeHTML(str) {
+            const p = document.createElement('p');
+            p.textContent = str;
+            return p.innerHTML;
+        }
+
+        // --- Démarrage de l'application ---
+        setupAuth();
+
+    </script>
+</body>
+</html>
